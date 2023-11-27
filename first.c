@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define MAX_OPER_NUM 10000
 #define MAX_NODE_NUM 500
@@ -101,7 +102,7 @@ void changeWeight(int *weight[], int *numbers) {
 int *adj(int *weight[], int name, int nodeNum, int *adjNum, int *connectd) {
   int *adjArr = (int *)malloc(sizeof(int) * nodeNum);
   for (int i = 1; i <= nodeNum; i++) {
-    if (connectd[i] == 0 && weight[name][i] != 0) {
+    if (connectd[i-1] == 0 && weight[name][i] != 0) {
       adjArr[*adjNum] = i;
       (*adjNum)++;
     }
@@ -120,7 +121,7 @@ void findMST(priorityQueue *pq, int *weight[], int nodeNum) {
 
   while (pq->size != 0) {
     vertex *u = extractMin(pq);
-    connected[u->name] = 1;
+    connected[u->name-1] = 1;
     if (u->key == INT_MAX) {
       printf("Disconnected\n");
       return;
@@ -143,6 +144,13 @@ void findMST(priorityQueue *pq, int *weight[], int nodeNum) {
 }
 
 int main() {
+
+  // clock start
+  clock_t start, end;
+  double cpu_time_used;
+  start = clock();
+
+
   FILE *file = fopen("mst_in.txt", "r");
 
   int operNum = 0;
@@ -181,6 +189,11 @@ int main() {
   }
 
   fclose(file);
+
+  // clock end
+  end = clock();
+  cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+  printf("time: %f\n", cpu_time_used);
 
   return 0;
 }

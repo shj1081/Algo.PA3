@@ -1181,5 +1181,3 @@ Disconnected
 93510
 93510
 93510
-
-TIME : 54 ms

@@ -10,3 +10,4 @@
 # Ignore individual
 .vscode
 .DS_Store
+/first.dSYM

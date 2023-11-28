@@ -79,6 +79,7 @@ vertex *extractMin(priorityQueue *pq) {
   }
   vertex *min = pq->arr[0];
   pq->arr[0] = pq->arr[pq->size - 1];
+  pq->position[pq->arr[0]->name] = 0;
   pq->size--;
   heapifyDown(pq, 0);
   return min;
@@ -188,7 +189,7 @@ void changeWeight(int *weight[], int *numbers, vertex *vertexLinkedList[]) {
 }
 
 void findMST(priorityQueue *pq, int *weight[], int nodeNum,
-             vertex *vertexLinkedList[]) {
+             vertex *vertexLinkedList[], FILE *out) {
   int MST = 0;
   pq->arr[0]->key = 0;
   int connected[nodeNum];
@@ -200,10 +201,7 @@ void findMST(priorityQueue *pq, int *weight[], int nodeNum,
     vertex *u = extractMin(pq);
     connected[u->name - 1] = 1;
     if (u->key == INT_MAX) {
-      //printf("u->name: %d\n", u->name);
-      //printf("u->key: %d\n", u->key);
-
-      printf("Disconnected\n");
+      fprintf(out, "Disconnected\n");
       return;
     }
     MST += u->key;
@@ -212,25 +210,24 @@ void findMST(priorityQueue *pq, int *weight[], int nodeNum,
     vertex *temp = vertexLinkedList[u->name];
     while (temp != NULL) {
       if (connected[temp->name - 1] == 0 &&
-          pq->arr[pq->position[temp->name]]->key > weight[u->name][temp->name]) {
+          pq->arr[pq->position[temp->name]]->key >
+              weight[u->name][temp->name]) {
         pq->arr[pq->position[temp->name]]->key = weight[u->name][temp->name];
         heapifyUp(pq, pq->position[temp->name]);
       }
       temp = temp->next;
     }
   }
-  printf("%d\n", MST);
+  fprintf(out, "%d\n", MST);
 }
 
 int main() {
-  // clock start
-  clock_t start, end;
-  double cpu_time_used;
-  start = clock();
+  int TIME = 0;
+  clock_t start = clock();
 
-  FILE *file = fopen("mst_in.txt", "r");
+  FILE *file = fopen("mst.in", "r");
+  FILE *out = fopen("mst.out", "w");
 
-  int operNum = 0;
   int nodeNum = 0;
   fscanf(file, "%d", &nodeNum);
 
@@ -251,7 +248,7 @@ int main() {
   char oper[15];  // for storing operation temporarily
   int numbers[3];
 
-  while (operNum < MAX_OPER_NUM && fscanf(file, "%s", oper) != EOF) {
+  while (fscanf(file, "%s", oper) != EOF) {
     if (strcmp(oper, "insertEdge") == 0) {
       fscanf(file, "%d %d %d", &numbers[0], &numbers[1], &numbers[2]);
       insertEdge(weight, numbers, vertexLinkedList);
@@ -261,19 +258,17 @@ int main() {
     } else if (strcmp(oper, "deleteEdge") == 0) {
       fscanf(file, "%d %d", &numbers[0], &numbers[1]);
       deleteEdge(weight, numbers, vertexLinkedList);
-    } else {
+    } else if (strcmp(oper, "findMST") == 0) {
       initQueue(&pq, nodeNum);
-      findMST(&pq, weight, nodeNum, vertexLinkedList);
+      findMST(&pq, weight, nodeNum, vertexLinkedList, out);
     }
-    operNum++;
   }
 
   fclose(file);
+  fclose(out);
 
-  // clock end
-  end = clock();
-  cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-  printf("time: %f\n", cpu_time_used);
+  TIME += ((int)clock() - start) / (CLOCKS_PER_SEC / 1000);
+  printf("TIME: %d\n", TIME);
 
   return 0;
 }

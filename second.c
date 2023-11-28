@@ -10,7 +10,7 @@
 typedef struct vertex {
   int name;
   int key;
-  struct vertex *parent;
+  struct vertex *next;
 } vertex;
 
 typedef struct priorityQueue {
@@ -27,6 +27,12 @@ void initQueue(priorityQueue *pq, int nodeNum) {
     pq->arr[i]->name = i + 1;
     pq->arr[i]->key = INT_MAX;
     pq->position[i + 1] = i;
+  }
+}
+
+void initVertexLinkedList(vertex *vertexLinkedList[], int nodeNum) {
+  for (int i = 1; i <= nodeNum; i++) {
+    vertexLinkedList[i] = NULL;
   }
 }
 
@@ -78,42 +84,113 @@ vertex *extractMin(priorityQueue *pq) {
   return min;
 }
 
-void insertEdge(int *weight[], int *numbers) {
+void insertEdge(int *weight[], int *numbers, vertex *vertexLinkedList[]) {
   if (weight[numbers[0]][numbers[1]] == 0) {
     weight[numbers[0]][numbers[1]] = numbers[2];
     weight[numbers[1]][numbers[0]] = numbers[2];
+
+    // insert vertex into linked list head
+    vertex *newVertex = (vertex *)malloc(sizeof(vertex));
+    newVertex->name = numbers[1];
+    newVertex->key = numbers[2];
+
+    if (vertexLinkedList[numbers[0]] != NULL) {
+      vertex *temp = vertexLinkedList[numbers[0]];
+      vertexLinkedList[numbers[0]] = newVertex;
+      newVertex->next = temp;
+    } else {
+      newVertex->next = NULL;
+      vertexLinkedList[numbers[0]] = newVertex;
+    }
+
+    // insert the opposite direction
+    newVertex = (vertex *)malloc(sizeof(vertex));
+    newVertex->name = numbers[0];
+    newVertex->key = numbers[2];
+
+    if (vertexLinkedList[numbers[1]] != NULL) {
+      vertex *temp = vertexLinkedList[numbers[1]];
+      vertexLinkedList[numbers[1]] = newVertex;
+      newVertex->next = temp;
+    } else {
+      newVertex->next = NULL;
+      vertexLinkedList[numbers[1]] = newVertex;
+    }
   }
 }
 
-void deleteEdge(int *weight[], int *numbers) {
+void deleteEdge(int *weight[], int *numbers, vertex *vertexLinkedList[]) {
   if (weight[numbers[0]][numbers[1]] != 0) {
     weight[numbers[0]][numbers[1]] = 0;
     weight[numbers[1]][numbers[0]] = 0;
+
+    // delete vertex from linked list
+    vertex *temp = vertexLinkedList[numbers[0]];
+    vertex *prev = NULL;
+    while (temp != NULL) {
+      if (temp->name == numbers[1]) {
+        if (prev == NULL) {
+          vertexLinkedList[numbers[0]] = temp->next;
+        } else {
+          prev->next = temp->next;
+        }
+        free(temp);
+        break;
+      }
+      prev = temp;
+      temp = temp->next;
+    }
+
+    // delete the opposite direction
+    temp = vertexLinkedList[numbers[1]];
+    prev = NULL;
+    while (temp != NULL) {
+      if (temp->name == numbers[0]) {
+        if (prev == NULL) {
+          vertexLinkedList[numbers[1]] = temp->next;
+        } else {
+          prev->next = temp->next;
+        }
+        free(temp);
+        break;
+      }
+      prev = temp;
+      temp = temp->next;
+    }
   }
 }
 
-void changeWeight(int *weight[], int *numbers) {
+void changeWeight(int *weight[], int *numbers, vertex *vertexLinkedList[]) {
   if (weight[numbers[0]][numbers[1]] != 0) {
     weight[numbers[0]][numbers[1]] = numbers[2];
     weight[numbers[1]][numbers[0]] = numbers[2];
-  }
-}
 
-int *adj(int *weight[], int name, int nodeNum, int *adjNum, int *connectd) {
-  int *adjArr = (int *)malloc(sizeof(int) * nodeNum);
-  for (int i = 1; i <= nodeNum; i++) {
-    if (connectd[i-1] == 0 && weight[name][i] != 0) {
-      adjArr[*adjNum] = i;
-      (*adjNum)++;
+    // change vertex in linked list
+    vertex *temp = vertexLinkedList[numbers[0]];
+    while (temp != NULL) {
+      if (temp->name == numbers[1]) {
+        temp->key = numbers[2];
+        break;
+      }
+      temp = temp->next;
+    }
+
+    // change the opposite direction
+    temp = vertexLinkedList[numbers[1]];
+    while (temp != NULL) {
+      if (temp->name == numbers[0]) {
+        temp->key = numbers[2];
+        break;
+      }
+      temp = temp->next;
     }
   }
-  return adjArr;
 }
 
-void findMST(priorityQueue *pq, int *weight[], int nodeNum) {
+void findMST(priorityQueue *pq, int *weight[], int nodeNum,
+             vertex *vertexLinkedList[]) {
   int MST = 0;
   pq->arr[0]->key = 0;
-  pq->arr[0]->parent = NULL;
   int connected[nodeNum];
   for (int i = 0; i < nodeNum; i++) {
     connected[i] = 0;
@@ -121,34 +198,35 @@ void findMST(priorityQueue *pq, int *weight[], int nodeNum) {
 
   while (pq->size != 0) {
     vertex *u = extractMin(pq);
-    connected[u->name-1] = 1;
+    connected[u->name - 1] = 1;
     if (u->key == INT_MAX) {
+      //printf("u->name: %d\n", u->name);
+      //printf("u->key: %d\n", u->key);
+
       printf("Disconnected\n");
       return;
     }
     MST += u->key;
-    int *adjArr;
-    int adjNum = 0;
-    adjArr = adj(weight, u->name, nodeNum, &adjNum, connected);
 
-    for (int i = 0; i < adjNum; i++) {
-      int v = adjArr[i];
-      if (pq->arr[pq->position[v]]->key > weight[u->name][v]) {
-        pq->arr[pq->position[v]]->key = weight[u->name][v];
-        heapifyUp(pq, pq->position[v]);
+    // update key of adjacent vertices
+    vertex *temp = vertexLinkedList[u->name];
+    while (temp != NULL) {
+      if (connected[temp->name - 1] == 0 &&
+          pq->arr[pq->position[temp->name]]->key > weight[u->name][temp->name]) {
+        pq->arr[pq->position[temp->name]]->key = weight[u->name][temp->name];
+        heapifyUp(pq, pq->position[temp->name]);
       }
+      temp = temp->next;
     }
   }
-   printf("%d\n", MST);
+  printf("%d\n", MST);
 }
 
 int main() {
-
   // clock start
   clock_t start, end;
   double cpu_time_used;
   start = clock();
-
 
   FILE *file = fopen("mst_in.txt", "r");
 
@@ -167,22 +245,25 @@ int main() {
   priorityQueue pq;
   initQueue(&pq, nodeNum);
 
+  vertex *vertexLinkedList[MAX_NODE_NUM + 1];
+  initVertexLinkedList(vertexLinkedList, nodeNum);
+
   char oper[15];  // for storing operation temporarily
   int numbers[3];
 
   while (operNum < MAX_OPER_NUM && fscanf(file, "%s", oper) != EOF) {
     if (strcmp(oper, "insertEdge") == 0) {
       fscanf(file, "%d %d %d", &numbers[0], &numbers[1], &numbers[2]);
-      insertEdge(weight, numbers);
+      insertEdge(weight, numbers, vertexLinkedList);
     } else if (strcmp(oper, "changeWeight") == 0) {
       fscanf(file, "%d %d %d", &numbers[0], &numbers[1], &numbers[2]);
-      changeWeight(weight, numbers);
+      changeWeight(weight, numbers, vertexLinkedList);
     } else if (strcmp(oper, "deleteEdge") == 0) {
       fscanf(file, "%d %d", &numbers[0], &numbers[1]);
-      deleteEdge(weight, numbers);
+      deleteEdge(weight, numbers, vertexLinkedList);
     } else {
       initQueue(&pq, nodeNum);
-      findMST(&pq, weight, nodeNum);
+      findMST(&pq, weight, nodeNum, vertexLinkedList);
     }
     operNum++;
   }

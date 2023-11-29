@@ -262,11 +262,11 @@ void findMST(priorityQueue *pq, int *weight[], int nodeNum,
     // update key of adjacent vertices
     vertex *temp = vertexLinkedList[u->name];
     while (temp != NULL) {
+      int pos = pq->position[temp->name];
       if (connected[temp->name - 1] == 0 &&
-          pq->arr[pq->position[temp->name]]->key >
-              weight[u->name][temp->name]) {
-        pq->arr[pq->position[temp->name]]->key = weight[u->name][temp->name];
-        heapifyUp(pq, pq->position[temp->name]);
+          pq->arr[pos]->key > weight[u->name][temp->name]) {
+        pq->arr[pos]->key = weight[u->name][temp->name];
+        heapifyUp(pq, pos);
       }
       temp = temp->next;
     }
@@ -304,8 +304,8 @@ int main() {
   vertex *vertexLinkedList[MAX_NODE_NUM + 1];
   initVertexLinkedList(vertexLinkedList, nodeNum);
 
-  char oper[15];  // for storing operation temporarily
-  int numbers[3]; // for storing numbers temporarily
+  char oper[15];   // for storing operation temporarily
+  int numbers[3];  // for storing numbers temporarily
 
   // read operations from input file and perform them
   while (fscanf(file, "%s", oper) != EOF) {

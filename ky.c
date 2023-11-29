@@ -152,7 +152,7 @@ void find_MST(FILE* fp, PA x, int k, int goal) {
 }
 
 int main() {
-  FILE* fin = fopen("mst_in.txt", "r");
+  FILE* fin = fopen("mst.in", "r");
   FILE* fout = fopen("mst.out", "w");
   int TIME = 0;
   /* Timer on */
@@ -294,6 +294,6 @@ int main() {
   }
 
   TIME += ((int)clock() - start) / (CLOCKS_PER_SEC / 1000);
-  fprintf(fout, "\nTIME : %d ms\n", TIME);
+  printf("\nTIME : %d ms\n", TIME);
   return 0;
 }
